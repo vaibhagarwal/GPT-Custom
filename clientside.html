@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Chat History</title>
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            const chatSocket= new WebSocket("ws://"+ location.host + "/ws");
+
+            function appendMessage(message, className) {
+                let messageElement;
+                const chatMessages = document.getElementById("chat-messages");
+                const lastMessage= chatMessages.lastChild;
+
+                const shouldAutoScroll = chatMessages.scrollTop + chatMessages.clientHeight >=chatMessages.scrollHeight;
+
+                if (lastMessage && lastMessage.classList.contains(className)){
+
+                    messageElement=lastMessage;
+                    messageElement.textContent+= message;
+        
+                } else {
+                    messageElement=document.createElement("div");
+                    messageElement.classList.add("message", className);
+                    messageElement.textContent=message;
+                    chatMessages.appendChild(messageElement);
+                }
+
+                if (shouldAutoScroll){
+                    chatMessages.scrollTop=chatMessages.scrollHeight;
+
+                }
+            }
+
+            chatSocket.onmessage=function(event) {
+
+                appendMessage(event.data,'assistant');
+                console.log(event.data);
+
+                chatSocket.send('ack');
+
+            };
+            document.getElementById("chat-form").addEventListener("submit", function(event){
+                event.preventDefault();
+                const inputElement = document.getElementById("chat-input");
+                const message=inputElement.value.trim();
+                if (message){
+                        appendMessage(message, "user");
+                        chatSocket.send(JSON.stringify({ content: message}));
+                        inputElement.value="";
+                    }
+                });
+                chatSocket.addEventListener("open",function(event){
+                    console.log("webSocket connected:", event);
+                    
+                });
+                chatSocket.addEventListener("close",function(event){
+                    console.log("webSocket disconnected:",event);
+
+                });
+                chatSocket.addEventListener("error",function(event){
+                    console.log("webSocket error:",event);
+                });
+            });
+    </script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f0f5f9;
+            color: #333;
+            margin: 0;
+            padding: 0;
+        }
+
+        #heading {
+            text-align: center;
+            border: 3px solid #3a7bd5;
+            padding: 20px;
+            width: fit-content;
+            margin: auto;
+            color: #fff;
+            background-color: #3a7bd5;
+            border-radius: 10px;
+            text-shadow: 3px 3px #000;
+            font-weight: bold;
+        }
+
+        #chat-container{
+            width: 90%;
+            max-width:600px;
+            margin: 28px auto;
+            background-color: #f5f8fa;
+            border: 3px solid #3a7bd5;
+            border-radius:10px;
+            padding: 20px;
+            box-sizing: border-box;
+            transition: all 0.3s ease-in-out;
+        }
+
+        #chat-messages{
+            height: 300px;
+            overflow-y: scroll;
+            padding: 15px;
+            border: 1px solid #ccc;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            background-color: #fff;
+        }
+
+        #chat-input{
+            width:100%;
+            box-sizing: border-box;
+            padding: 10px 15px;
+            margin-right: 5px;
+            margin-bottom: 20px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            transition: all 0.3s ease-in-out;
+            font-weight: bold;
+
+        }
+
+        #chat-input:focus{
+            border-color: #3a7bd5;
+            box-shadow: 0 0 5px rgba(58, 123, 213, 0.5);
+        }
+
+        #chat-button{
+            background-color: #3a7bd5;
+            border:none;
+            color: white;
+            padding: 10px 20px;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 16px;
+            font-weight: bold;
+            transition: all 0.3s ease-in-out;
+            border-radius: 10px;
+            cursor: pointer;
+        }
+
+        #chat-button:hover{
+            background-color: #1e477d;
+        }
+
+        .message{
+            padding: 10px 15px;
+            margin: 10px 0;
+            border-radius: 10px;
+            line-height: 1.5;
+            max-width: 80%;
+            font-weight: bold;
+            width: fit-content;
+        }
+            
+        .message.user{
+            background-color: #3a7bd5;
+            color: white;
+            text-align: right;
+            margin-left: auto;
+        }
+
+        .message.assistant{
+            background-color: #fff;
+            color: #333;
+            text-align: left;
+            margin-right: auto;
+        }
+    </style>
+</head>
+<body>
+    <h1 id="heading">EDYou QnA Demo</h1>
+    <pre id="streamData"></pre>
+    <div id="chat-container">
+        <div id="chat-messages"></div>
+        <form id="chat-form">
+            <input  id="chat-input" type="text" placeholder="Type your message here...">
+            <button id="chat-button" type="submit">Send</button>
+        </form>
+    </div>
+</body>
+</html>
